@@ -1,0 +1,274 @@
+openapi: 3.0.3
+info:
+  title: Smart City Administration API
+  version: 0.1.0
+  description: Contract for the smart city admin backend powering the Sentilo-inspired frontend.
+servers:
+  - url: https://api.smartcity.local
+security:
+  - bearerAuth: []
+paths:
+  /zones:
+    get:
+      summary: List operational zones
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Zones returned
+          headers:
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCount"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Zone"
+  /sensors:
+    get:
+      summary: List sensors
+      parameters:
+        - name: zone
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            $ref: "#/components/schemas/SensorType"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/SensorStatus"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Sensors returned
+          headers:
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCount"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Sensor"
+  /sensors/{sensorId}:
+    get:
+      summary: Get sensor by ID
+      parameters:
+        - name: sensorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Sensor returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sensor"
+        "404":
+          description: Sensor not found
+  /readings:
+    get:
+      summary: Query readings across sensors
+      parameters:
+        - name: sensorId
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Sensor readings
+          headers:
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCount"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reading"
+  /alerts:
+    get:
+      summary: List active alerts
+      parameters:
+        - name: level
+          in: query
+          schema:
+            $ref: "#/components/schemas/AlertLevel"
+        - name: zone
+          in: query
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Alerts returned
+          headers:
+            X-Total-Count:
+              $ref: "#/components/headers/TotalCount"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+  /metrics/overview:
+    get:
+      summary: Get city readiness metrics
+      responses:
+        "200":
+          description: Overview metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverviewMetrics"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      description: Maximum number of items to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    Offset:
+      name: offset
+      in: query
+      description: Number of items to skip before starting the page
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+  headers:
+    TotalCount:
+      description: Total number of items matching the query
+      schema:
+        type: integer
+        minimum: 0
+  schemas:
+    Zone:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        manager:
+          type: string
+      required: [id, name]
+    SensorType:
+      type: string
+      enum: [traffic, air, water, energy, waste, noise, parking]
+    SensorStatus:
+      type: string
+      enum: [online, maintenance, offline]
+    Sensor:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/SensorType"
+        status:
+          $ref: "#/components/schemas/SensorStatus"
+        zone:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+        location:
+          $ref: "#/components/schemas/GeoPoint"
+        metrics:
+          type: object
+          additionalProperties:
+            type: number
+      required: [id, name, type, status, zone, updatedAt, location]
+    GeoPoint:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: float
+        lng:
+          type: number
+          format: float
+      required: [lat, lng]
+    Reading:
+      type: object
+      properties:
+        sensorId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        values:
+          type: object
+          additionalProperties:
+            type: number
+      required: [sensorId, timestamp, values]
+    AlertLevel:
+      type: string
+      enum: [critical, warning, info]
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+        level:
+          $ref: "#/components/schemas/AlertLevel"
+        title:
+          type: string
+        description:
+          type: string
+        zone:
+          type: string
+        sensorId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, level, title, zone, createdAt]
+    OverviewMetrics:
+      type: object
+      properties:
+        readinessIndex:
+          type: number
+        responseTimeMinutes:
+          type: number
+        criticalAlerts:
+          type: integer
+        energyReservePercent:
+          type: number
+        activeCrews:
+          type: integer
+      required:
+        [readinessIndex, responseTimeMinutes, criticalAlerts, energyReservePercent, activeCrews]

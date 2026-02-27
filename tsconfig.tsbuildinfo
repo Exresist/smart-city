@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/alertspanel.tsx","./src/components/header.tsx","./src/components/managementpanel.tsx","./src/components/mappanel.tsx","./src/components/sensortable.tsx","./src/mocks/sensors.ts","./src/services/api.ts","./src/utils/metriclabels.ts"],"version":"5.9.3"}
